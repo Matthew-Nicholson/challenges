@@ -1,13 +1,14 @@
-import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Context from '../../Context';
+import React, { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import Context from "../../Context";
+import sanitizeHtml from "sanitize-html";
 
 const CreateCourse = () => {
   const context = useContext(Context.Context);
-  const [courseTitle, setCourseTitle] = useState('');
-  const [courseDescription, setCourseDescription] = useState('');
-  const [estimatedTime, setEstimatedTime] = useState('');
-  const [materialsNeeded, setMaterialsNeeded] = useState('');
+  const [courseTitle, setCourseTitle] = useState("");
+  const [courseDescription, setCourseDescription] = useState("");
+  const [estimatedTime, setEstimatedTime] = useState("");
+  const [materialsNeeded, setMaterialsNeeded] = useState("");
   const [errors, setErrors] = useState([]);
   const authUser = context.authenticatedUser;
 
@@ -17,25 +18,62 @@ const CreateCourse = () => {
     const name = event.target.name;
     const value = event.target.value;
 
-    if (name === 'courseTitle') {
+    if (name === "courseTitle") {
       setCourseTitle(value);
     }
 
-    if (name === 'courseDescription') {
+    if (name === "courseDescription") {
       setCourseDescription(value);
     }
 
-    if (name === 'estimatedTime') {
+    if (name === "estimatedTime") {
       setEstimatedTime(value);
     }
 
-    if (name === 'materialsNeeded') {
+    if (name === "materialsNeeded") {
       setMaterialsNeeded(value);
     }
-  }
+  };
+
+  const sanitizeData = (val) => {
+    return sanitizeHtml(val, {
+      allowedTags: [],
+      allowedAttributes: {},
+    });
+  };
 
   const submit = (event) => {
     event.preventDefault();
+
+    const sanitizedTitle = sanitizeData(courseTitle);
+    const sanitizedDescription = sanitizeData(courseDescription);
+    const sanitizedEstimatedTime = sanitizeData(estimatedTime);
+    const sanitizedMaterialsNeeded = sanitizeData(materialsNeeded);
+
+    // Basic validation after sanitization
+    const newErrors = [];
+    if (!sanitizedTitle.trim()) {
+      setCourseTitle("");
+      newErrors.push("Please provide a valid course title.");
+    }
+    if (!sanitizedDescription.trim()) {
+      setCourseDescription("");
+      newErrors.push("Please provide a valid course description.");
+    }
+    if (!sanitizedEstimatedTime.trim()) {
+      setEstimatedTime("");
+      newErrors.push("Please provide a valid estimated time.");
+    }
+    if (!sanitizedMaterialsNeeded.trim()) {
+      setMaterialsNeeded("");
+      newErrors.push("Please provide a valid materials needed.");
+    }
+
+    if (newErrors.length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     // Course object to create a course
     const course = {
       title: courseTitle,
@@ -45,63 +83,92 @@ const CreateCourse = () => {
       userId: authUser.id,
     };
 
-    context.data.createCourse(course, authUser.emailAddress, authUser.password)
-      .then(errors => {
+    context.data
+      .createCourse(course, authUser.emailAddress, authUser.password)
+      .then((errors) => {
         if (errors.length) {
           setErrors(errors);
         } else {
-          navigate('/');
+          navigate("/");
         }
       })
       .catch((error) => {
         console.error(error);
-        navigate('/error');
+        navigate("/error");
       });
-  }
+  };
 
   const cancel = (event) => {
     event.preventDefault();
-    navigate('/');
-  }
+    navigate("/");
+  };
 
   return (
     <div className="wrap">
       <h2>Create Course</h2>
-      {errors.length ?
+      {errors.length ? (
         <div className="validation--errors">
           <h3>Validation Errors</h3>
           <ul>
-            {errors.map((error, i) => <li key={i}>{error}</li>)}
+            {errors.map((error, i) => (
+              <li key={i}>{error}</li>
+            ))}
           </ul>
         </div>
-        : null
-      }
+      ) : null}
       <form>
         <div className="main--flex">
           <div>
             <label htmlFor="courseTitle">Course Title</label>
-            <input id="courseTitle" name="courseTitle" type="text" value={courseTitle} onChange={onChange} />
+            <input
+              id="courseTitle"
+              name="courseTitle"
+              type="text"
+              value={courseTitle}
+              onChange={onChange}
+            />
 
             {/* Use current authenticated user's first name and last name as course author */}
-            <p>By {authUser.firstName} {authUser.lastName}</p>
+            <p>
+              By {authUser.firstName} {authUser.lastName}
+            </p>
 
             <label htmlFor="courseDescription">Course Description</label>
-            <textarea id="courseDescription" name="courseDescription" value={courseDescription} onChange={onChange}></textarea>
+            <textarea
+              id="courseDescription"
+              name="courseDescription"
+              value={courseDescription}
+              onChange={onChange}
+            ></textarea>
           </div>
           <div>
             <label htmlFor="estimatedTime">Estimated Time</label>
-            <input id="estimatedTime" name="estimatedTime" type="text" value={estimatedTime} onChange={onChange} />
+            <input
+              id="estimatedTime"
+              name="estimatedTime"
+              type="text"
+              value={estimatedTime}
+              onChange={onChange}
+            />
 
             <label htmlFor="materialsNeeded">Materials Needed</label>
-            <textarea id="materialsNeeded" name="materialsNeeded" value={materialsNeeded} onChange={onChange}></textarea>
+            <textarea
+              id="materialsNeeded"
+              name="materialsNeeded"
+              value={materialsNeeded}
+              onChange={onChange}
+            ></textarea>
           </div>
         </div>
-        <button className="button" type="submit" onClick={submit}>Create Course</button>
-        <button className="button button-secondary" onClick={cancel}>Cancel</button>
+        <button className="button" type="submit" onClick={submit}>
+          Create Course
+        </button>
+        <button className="button button-secondary" onClick={cancel}>
+          Cancel
+        </button>
       </form>
-    </div >
-
+    </div>
   );
-}
+};
 
 export default CreateCourse;
